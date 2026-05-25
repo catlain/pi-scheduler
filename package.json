@@ -1,0 +1,12 @@
+{
+  "name": "pi-scheduler",
+  "version": "1.0.0",
+  "description": "Timer and recurring task extension for pi-coding-agent",
+  "main": "index.ts",
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": { "optional": true }
+  }
+}
