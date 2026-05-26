@@ -1,15 +1,38 @@
 # pi-scheduler
 
-Timer and recurring task extension for [pi-coding-agent](https://github.com/earendil-works/pi-coding-agent) — scheduled messages, interval-based prompts, and task automation.
+Timer and recurring task extension for [pi](https://github.com/earendil-works/pi-coding-agent) — scheduled messages, interval-based prompts, and task automation.
 
-## What It Does
+## Why You Need It
 
-Sometimes you need your AI agent to do things on a schedule — remind you to commit every 30 minutes, check build status periodically, or send a notification at a specific time. pi-scheduler adds **time-based automation** to pi:
+Sometimes you need your AI agent to do things on a schedule — remind you to commit every 30 minutes, check build status periodically, or send a notification at a specific time. Without pi-scheduler, you'd have to manually trigger these actions yourself.
+
+pi-scheduler adds **time-based automation** to pi:
 
 - **One-time reminders** — "Remind me in 10 minutes to check the tests"
 - **Recurring tasks** — "Every 5 minutes, check if the server is responding"
 - **Timed prompts** — Inject messages into the agent's context at scheduled times
 - **Task management** — List, cancel, and monitor active timers
+
+## How It Works
+
+```
+User/Agent: "Remind me in 10 min to check tests"
+        │
+        ▼
+schedule(action: "create", interval_ms: 600000, prompt: "Check tests")
+        │
+        ▼
+TimerEngine registers timer
+        │
+        ├── one-shot (recurring=false): fires once after interval
+        └── loop (recurring=true): fires every interval
+        │
+        ▼ when timer fires
+Prompt injected into agent context
+        │
+        ▼
+Agent processes the prompt like a user message
+```
 
 ## Installation
 
@@ -71,13 +94,49 @@ schedule(action: "cancel", id: "task-abc123")
 
 ## Use Cases
 
-- **Commit discipline** — Remind yourself to commit every 30 minutes during long sessions
-- **Monitoring** — Periodically check server status or build progress
-- **Time-boxing** — Set a reminder when you've spent too long on a task
-- **Batch processing** — Trigger periodic data processing steps
+| Scenario | Config |
+|----------|--------|
+| **Commit discipline** | Recurring every 30 min: "Commit current changes" |
+| **Monitoring** | Recurring every 5 min: "Check server status" |
+| **Time-boxing** | One-shot after 60 min: "You've spent over an hour on this task" |
+| **Build check** | One-shot after 2 min: "Check if CI build passed" |
+| **Periodic review** | Recurring every 20 min: "Review what you've done so far" |
 
-## Dependencies
+## Best Practices
 
+### ✅ Recommended
+- Use human-readable prompts — they're injected directly into the agent's context
+- Set reasonable intervals (≥ 1 minute) — too frequent will flood the context
+- Use `/tasks` to review active tasks before creating new ones
+- Cancel tasks you no longer need to free up context
+
+### ❌ Not Recommended
+- Don't set intervals < 30 seconds — the agent can't respond that fast
+- Don't create many recurring tasks simultaneously — context pollution
+- Don't use for critical scheduling — timers are lost when pi restarts
+
+## Limitations
+
+| Limitation | Detail |
+|------------|--------|
+| No persistence | Timers are in-memory only, lost on restart |
+| No cron syntax | Intervals only (milliseconds), no cron expressions |
+| Context injection | Prompt occupies context space when it fires |
+| No deduplication | Creating identical tasks results in duplicates |
+
+## Architecture
+
+```
+pi-scheduler/
+├── index.ts          # Entry: register schedule tool + slash commands
+├── timer-engine.ts   # Core timer management (create/list/cancel)
+├── parser.ts         # Natural language time parsing ("10 min" → ms)
+├── types.ts          # Timer type definitions
+├── tests/            # Unit tests
+└── package.json
+```
+
+**Dependencies**:
 - `@earendil-works/pi-coding-agent` — ExtensionAPI (peer)
 
 ## License
