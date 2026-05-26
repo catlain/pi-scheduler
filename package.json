@@ -8,5 +8,8 @@
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": { "optional": true }
+  },
+  "pi": {
+    "extensions": ["."]
   }
 }
