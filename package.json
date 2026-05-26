@@ -7,9 +7,22 @@
     "@earendil-works/pi-coding-agent": ">=1.0.0"
   },
   "peerDependenciesMeta": {
-    "@earendil-works/pi-coding-agent": { "optional": true }
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
   },
   "pi": {
-    "extensions": ["."]
-  }
+    "extensions": [
+      "."
+    ]
+  },
+  "files": [
+    "*.ts",
+    "tests/",
+    "README.md",
+    "README.en.md",
+    "tsconfig.json",
+    "vitest.config.ts",
+    "package.json"
+  ]
 }
