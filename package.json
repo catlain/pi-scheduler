@@ -24,5 +24,8 @@
     "tsconfig.json",
     "vitest.config.ts",
     "package.json"
-  ]
+  ],
+  "devDependencies": {
+    "vitest": "^4.1.7"
+  }
 }
