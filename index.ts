@@ -117,7 +117,7 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 
       const active = engine.list().filter((t) => t.status === "active");
       if (active.length === 0) {
-        ctx.ui.notify("没有活跃的定时任务", "info");
+        ctx.ui.notify("没有活跃的定时任务\n\n用法:\n  /tasks              # 列出所有任务\n  /tasks cancel <id>  # 取消指定任务", "info");
         return;
       }
 
