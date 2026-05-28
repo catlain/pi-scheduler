@@ -168,9 +168,105 @@ describe("createTimerEngine", () => {
     expect(engine.list()).toHaveLength(0);
   });
 
+  // --- fire with non-active status (branch coverage line 37) ---
+
+  it("should_early_return_when_firing_non_active_timer", () => {
+    const engine = createTimerEngine(pi as any, onUpdate);
+    const timer = engine.create("check", 300_000, true);
+
+    // Manually set status to non-active (simulate cancellation without clearing timeout)
+    timer.status = "cancelled";
+
+    // Advance time past fire time
+    vi.advanceTimersByTime(300_000 + 30_000);
+
+    // The fire function should early-return because status !== "active"
+    expect(pi.sendUserMessage).not.toHaveBeenCalled();
+    expect(timer.firedCount).toBe(0);
+  });
+
+  // --- cancel without handle (branch coverage line 88) ---
+
+  it("should_cancel_completed_timer_without_handle", () => {
+    const engine = createTimerEngine(pi as any, onUpdate);
+    const timer = engine.create("one-shot", 60_000, false);
+
+    // Fire the one-shot timer
+    vi.advanceTimersByTime(60_000 + 5_000);
+    expect(timer.status).toBe("completed");
+    expect(pi.sendUserMessage).toHaveBeenCalledOnce();
+
+    // Now cancel the completed timer (handle is already deleted in fire)
+    const result = engine.cancel(timer.id);
+    expect(result).toBe(true);
+    expect(timer.status).toBe("cancelled");
+  });
+
+  // --- restore with non-scheduler entries (branch coverage line 103) ---
+
+  it("should_skip_non_scheduler_entries_on_restore", () => {
+    const engine = createTimerEngine(pi as any, onUpdate);
+    const entries = [
+      { type: "user_message", customType: undefined, data: undefined },
+      { type: "custom", customType: "other", data: { timers: [] } },
+      { type: "custom", customType: "scheduler", data: {} }, // no timers
+    ];
+
+    engine.restore(entries as any);
+    expect(engine.list()).toHaveLength(0);
+  });
+
+  // --- restore with no timers in data (branch coverage line 103 falsy timers) ---
+
+  it("should_skip_scheduler_entry_without_timers_data", () => {
+    const engine = createTimerEngine(pi as any, onUpdate);
+    const now = Date.now();
+    const entries = [
+      {
+        type: "custom",
+        customType: "scheduler",
+        data: {}, // no .timers
+      },
+    ];
+
+    engine.restore(entries as any);
+    expect(engine.list()).toHaveLength(0);
+  });
+
+  // --- restore with non-active timer (branch coverage line 106) ---
+
+  it("should_skip_non_active_timer_on_restore", () => {
+    const engine = createTimerEngine(pi as any, onUpdate);
+    const now = Date.now();
+    const entries = [
+      {
+        type: "custom",
+        customType: "scheduler",
+        data: {
+          timers: [
+            {
+              id: "cancelled1",
+              prompt: "cancelled task",
+              intervalMs: 60_000,
+              createdAt: now - 120_000,
+              expiresAt: now + 60_000,
+              recurring: false,
+              firedCount: 0,
+              status: "cancelled", // not "active"
+            },
+          ],
+        },
+      },
+    ];
+
+    engine.restore(entries as any);
+    expect(engine.list()).toHaveLength(0);
+  });
+
   // --- cleanup ---
 
   it("should_cleanup_all_timers", () => {
+
     const engine = createTimerEngine(pi as any, onUpdate);
     engine.create("a", 300_000, true);
     engine.create("b", 600_000, false);
