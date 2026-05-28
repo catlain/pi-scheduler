@@ -1,7 +1,11 @@
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  test: {
-    include: ["tests/**/*.test.ts"],
-  },
+	test: {
+		include: ["tests/**/*.test.ts"],
+		coverage: {
+			provider: "v8" as const,
+			reporter: ["text", "html"],
+		},
+	},
 });

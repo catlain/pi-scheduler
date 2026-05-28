@@ -26,6 +26,7 @@
     "package.json"
   ],
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.7",
     "vitest": "^4.1.7"
   }
 }
