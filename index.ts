@@ -8,7 +8,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  AgentToolResult,
+  BeforeAgentStartEvent,
+  ExtensionAPI,
+  ExtensionContext,
+  SessionEntry,
+  SessionStartEvent,
+  Theme,
+} from "@earendil-works/pi-coding-agent";
 import { parseLoopArgs, parseInterval } from "./parser";
 import { createTimerEngine } from "./timer-engine";
 import type { Timer } from "./types";
@@ -51,7 +59,7 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 
     ui.setStatus("scheduler", `⏱ ${active.length}`);
 
-    ui.setWidget("scheduler", (_tui: any, theme: any): any => ({
+    ui.setWidget("scheduler", (_tui, theme: Theme) => ({
       render: () => {
         const lines = [`${theme.bold("Scheduler")}  ${active.length} 个活跃任务`];
         for (const t of active) {
@@ -148,7 +156,7 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
       },
       required: ["action"],
     },
-    async execute(_toolCallId: string, params: Record<string, unknown>): Promise<any> {
+    async execute(_toolCallId: string, params: Record<string, unknown>): Promise<AgentToolResult> {
       const action = params.action as string;
 
       if (action === "create") {
@@ -195,7 +203,7 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 
   // --- 事件 ---
 
-  pi.on("session_start", async (_event: any, ctx: ExtensionContext) => {
+  pi.on("session_start", async (_event: SessionStartEvent, ctx: ExtensionContext) => {
     cachedUi = ctx.ui;
     const entries = ctx.sessionManager.getEntries();
     engine = createTimerEngine(
@@ -211,12 +219,12 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 
   // /reload 防御：如果 session_start 未触发，通过 before_agent_start 懒恢复
   let restored = false;
-  pi.on("before_agent_start", async (_event: any, ctx: ExtensionContext) => {
+  pi.on("before_agent_start", async (_event: BeforeAgentStartEvent, ctx: ExtensionContext) => {
     cachedUi = ctx.ui;
     if (restored) return;
     restored = true;
     const entries = ctx.sessionManager.getEntries();
-    const hasTimers = entries.some((e: any) => e.type === "custom" && e.customType === "scheduler");
+    const hasTimers = entries.some((e: SessionEntry) => e.type === "custom" && (e as { customType?: string }).customType === "scheduler");
     if (hasTimers) {
       engine.restore(entries);
       ctx.ui.notify(`⏱ 已恢复 ${engine.list().filter((t) => t.status === "active").length} 个定时任务`, "info");

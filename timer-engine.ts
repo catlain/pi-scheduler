@@ -2,6 +2,7 @@
  * 定时器引擎 — 创建/取消/触发/恢复定时器
  */
 
+import type { SessionEntry } from "@earendil-works/pi-coding-agent";
 import type { Timer } from "./types";
 
 const JITTER_MAX_MS = 30_000;
@@ -10,12 +11,12 @@ export interface TimerEngine {
   create(prompt: string, intervalMs: number, recurring: boolean): Timer;
   cancel(id: string): boolean;
   list(): Timer[];
-  restore(entries: any[]): void;
+  restore(entries: SessionEntry[]): void;
   cleanup(): void;
 }
 
 export function createTimerEngine(
-  pi: { sendUserMessage: (msg: string) => void; appendEntry: (type: string, data: any) => void },
+  pi: { sendUserMessage: (msg: string) => void; appendEntry: (type: string, data: unknown) => void },
   onUpdate: () => void,
 ): TimerEngine {
   const timers = new Map<string, Timer>();
