@@ -1,5 +1,5 @@
 {
-  "name": "pi-scheduler",
+  "name": "pi-ate-scheduler",
   "version": "1.0.0",
   "description": "Timer and recurring task extension for pi-coding-agent",
   "main": "index.ts",
@@ -28,5 +28,17 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.7",
     "vitest": "^4.1.7"
-  }
+  },
+  "keywords": [
+    "pi-package"
+  ],
+  "homepage": "https://catlain.github.io/pi-atelier/",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com:catlain/pi-scheduler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/catlain/pi-scheduler/issues"
+  },
+  "license": "MIT"
 }
