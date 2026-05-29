@@ -2,6 +2,8 @@
 
 # pi-scheduler
 
+[Source Code](https://github.com/catlain/pi-scheduler) | [npm](https://www.npmjs.com/package/pi-ate-scheduler)
+
 Timer and recurring task extension for [pi](https://github.com/earendil-works/pi-coding-agent) — scheduled messages, interval-based prompts, and task automation.
 
 ## Why You Need It
