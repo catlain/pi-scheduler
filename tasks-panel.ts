@@ -71,7 +71,7 @@ export async function openTasksPanel(
 							t.prompt.length > 35
 								? t.prompt.slice(0, 32) + "..."
 								: t.prompt;
-						const interval = formatInterval(t.interval);
+						const interval = formatInterval(t.intervalMs);
 						const remaining = formatRemaining(t.expiresAt);
 						const status = isCancelled
 							? theme.fg("dim", " 已取消")

@@ -155,6 +155,8 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 
 	pi.on("session_start", async (_event: SessionStartEvent, ctx: ExtensionContext) => {
 		cachedUi = ctx.ui;
+		// 清理旧 engine 的所有 setTimeout，防止泄漏
+		engine.cleanup();
 		const entries = ctx.sessionManager.getEntries();
 		const newUpdateUI = createUpdateUI(() => cachedUi, () => engine);
 		engine = createTimerEngine(
