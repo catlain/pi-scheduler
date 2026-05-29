@@ -16,7 +16,7 @@ export interface TimerEngine {
 }
 
 export function createTimerEngine(
-  pi: { sendUserMessage: (msg: string) => void; appendEntry: (type: string, data: unknown) => void },
+  pi: { sendUserMessage: (msg: string, opts?: { deliverAs?: "steer" | "followUp" }) => void; appendEntry: (type: string, data: unknown) => void },
   onUpdate: () => void,
 ): TimerEngine {
   const timers = new Map<string, Timer>();
@@ -37,7 +37,7 @@ export function createTimerEngine(
     if (!timer || timer.status !== "active") return;
 
     try {
-      pi.sendUserMessage(`[定时任务 ${id}] ${timer.prompt}`);
+      pi.sendUserMessage(`[定时任务 ${id}] ${timer.prompt}`, { deliverAs: "followUp" });
     } catch {
       timer.status = "error";
     }

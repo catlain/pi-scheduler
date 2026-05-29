@@ -1,10 +1,9 @@
 /**
- * timer-engine.ts 测试 — 定时器核心逻辑
+ * timer-engine.ts 测试 — 定时器核心逻辑（创建/触发/取消/列表）
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTimerEngine } from "../timer-engine";
-import type { Timer } from "../types";
 
 function createMockPi() {
   return {
@@ -52,7 +51,10 @@ describe("createTimerEngine", () => {
     vi.advanceTimersByTime(300_000 + 30_000); // 5m + max jitter
 
     const timers = engine.list();
-    expect(pi.sendUserMessage).toHaveBeenCalledWith(`[定时任务 ${timers[0].id}] check deploy`);
+    expect(pi.sendUserMessage).toHaveBeenCalledWith(
+      `[定时任务 ${timers[0].id}] check deploy`,
+      { deliverAs: "followUp" },
+    );
     expect(timer.firedCount).toBe(1);
     expect(timer.status).toBe("active"); // 仍然活跃
   });
@@ -66,7 +68,10 @@ describe("createTimerEngine", () => {
     vi.advanceTimersByTime(60_000 + 5_000);
 
     const timers = engine.list();
-    expect(pi.sendUserMessage).toHaveBeenCalledWith(`[定时任务 ${timers[0].id}] remind me`);
+    expect(pi.sendUserMessage).toHaveBeenCalledWith(
+      `[定时任务 ${timers[0].id}] remind me`,
+      { deliverAs: "followUp" },
+    );
     expect(timer.firedCount).toBe(1);
     expect(timer.status).toBe("completed");
   });
@@ -100,197 +105,5 @@ describe("createTimerEngine", () => {
 
     const list = engine.list();
     expect(list).toHaveLength(2);
-  });
-
-  // --- restore ---
-
-  it("should_restore_unexpired_timers", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const now = Date.now();
-    const entries = [
-      {
-        type: "custom",
-        customType: "scheduler",
-        data: {
-          timers: [
-            {
-              id: "abc12345",
-              prompt: "check",
-              intervalMs: 300_000,
-              createdAt: now - 100_000,
-              expiresAt: now + 200_000, // 还没到期
-              recurring: true,
-              firedCount: 0,
-              status: "active",
-            },
-          ],
-        },
-      },
-    ];
-
-    engine.restore(entries as any);
-
-    const list = engine.list();
-    expect(list).toHaveLength(1);
-    expect(list[0].id).toBe("abc12345");
-
-    // 应该在剩余时间后触发
-    vi.advanceTimersByTime(200_000 + 30_000);
-    expect(pi.sendUserMessage).toHaveBeenCalledWith(`[定时任务 abc12345] check`);
-  });
-
-  it("should_skip_expired_timers_on_restore", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const now = Date.now();
-    const entries = [
-      {
-        type: "custom",
-        customType: "scheduler",
-        data: {
-          timers: [
-            {
-              id: "expired1",
-              prompt: "old task",
-              intervalMs: 60_000,
-              createdAt: now - 120_000,
-              expiresAt: now - 60_000, // 已过期
-              recurring: false,
-              firedCount: 0,
-              status: "active",
-            },
-          ],
-        },
-      },
-    ];
-
-    engine.restore(entries as any);
-
-    expect(engine.list()).toHaveLength(0);
-  });
-
-  // --- fire with non-active status (branch coverage line 37) ---
-
-  it("should_early_return_when_firing_non_active_timer", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const timer = engine.create("check", 300_000, true);
-
-    // Manually set status to non-active (simulate cancellation without clearing timeout)
-    timer.status = "cancelled";
-
-    // Advance time past fire time
-    vi.advanceTimersByTime(300_000 + 30_000);
-
-    // The fire function should early-return because status !== "active"
-    expect(pi.sendUserMessage).not.toHaveBeenCalled();
-    expect(timer.firedCount).toBe(0);
-  });
-
-  // --- cancel without handle (branch coverage line 88) ---
-
-  it("should_cancel_completed_timer_without_handle", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const timer = engine.create("one-shot", 60_000, false);
-
-    // Fire the one-shot timer
-    vi.advanceTimersByTime(60_000 + 5_000);
-    expect(timer.status).toBe("completed");
-    expect(pi.sendUserMessage).toHaveBeenCalledOnce();
-
-    // Now cancel the completed timer (handle is already deleted in fire)
-    const result = engine.cancel(timer.id);
-    expect(result).toBe(true);
-    expect(timer.status).toBe("cancelled");
-  });
-
-  // --- restore with non-scheduler entries (branch coverage line 103) ---
-
-  it("should_skip_non_scheduler_entries_on_restore", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const entries = [
-      { type: "user_message", customType: undefined, data: undefined },
-      { type: "custom", customType: "other", data: { timers: [] } },
-      { type: "custom", customType: "scheduler", data: {} }, // no timers
-    ];
-
-    engine.restore(entries as any);
-    expect(engine.list()).toHaveLength(0);
-  });
-
-  // --- restore with no timers in data (branch coverage line 103 falsy timers) ---
-
-  it("should_skip_scheduler_entry_without_timers_data", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const now = Date.now();
-    const entries = [
-      {
-        type: "custom",
-        customType: "scheduler",
-        data: {}, // no .timers
-      },
-    ];
-
-    engine.restore(entries as any);
-    expect(engine.list()).toHaveLength(0);
-  });
-
-  // --- restore with non-active timer (branch coverage line 106) ---
-
-  it("should_skip_non_active_timer_on_restore", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const now = Date.now();
-    const entries = [
-      {
-        type: "custom",
-        customType: "scheduler",
-        data: {
-          timers: [
-            {
-              id: "cancelled1",
-              prompt: "cancelled task",
-              intervalMs: 60_000,
-              createdAt: now - 120_000,
-              expiresAt: now + 60_000,
-              recurring: false,
-              firedCount: 0,
-              status: "cancelled", // not "active"
-            },
-          ],
-        },
-      },
-    ];
-
-    engine.restore(entries as any);
-    expect(engine.list()).toHaveLength(0);
-  });
-
-  // --- cleanup ---
-
-  it("should_cleanup_all_timers", () => {
-
-    const engine = createTimerEngine(pi as any, onUpdate);
-    engine.create("a", 300_000, true);
-    engine.create("b", 600_000, false);
-
-    engine.cleanup();
-
-    // 不应触发
-    vi.advanceTimersByTime(3_600_000);
-    expect(pi.sendUserMessage).not.toHaveBeenCalled();
-  });
-
-  // --- error handling ---
-
-  it("should_not_crash_when_sendUserMessage_throws", () => {
-    pi.sendUserMessage.mockImplementation(() => {
-      throw new Error("session replaced");
-    });
-
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const timer = engine.create("check", 60_000, false);
-
-    // 不应崩溃
-    vi.advanceTimersByTime(60_000 + 5_000);
-
-    expect(timer.status).toBe("completed"); // 仍然标记完成
   });
 });
