@@ -1,15 +1,37 @@
 /**
  * tasks-panel — /tasks 交互式面板组件
  *
- * 参考 /context 面板模式，用 ctx.ui.custom() 实现 overlay 面板：
- * - ↑↓ 选择任务
- * - d 标记取消（y/n 确认）
- * - Esc 退出
+ * 样式参考 /context 面板：
+ * - DynamicBorder 边框 + 主题色
+ * - 底部 overlay，靠近输入框
+ * - ↑↓ 选择 · d 取消(y/n 确认) · Esc 退出
  */
 
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import {
+	DynamicBorder,
+	type ExtensionContext,
+	type Theme,
+} from "@earendil-works/pi-coding-agent";
+import { Container, Spacer, Text } from "@earendil-works/pi-tui";
 import type { Timer } from "./types";
 import type { TimerEngine } from "./timer-engine";
+
+const bdr = (c: Container, t: Theme) =>
+	c.addChild(new DynamicBorder((s: string) => t.fg("accent", s)));
+const ln = (c: Container, t: Theme, s: string) => c.addChild(new Text(s, 1, 0));
+const sp = (c: Container) => c.addChild(new Spacer(1));
+
+function formatInterval(ms: number): string {
+	if (ms >= 3_600_000) return `${Math.round(ms / 3_600_000)}h`;
+	if (ms >= 60_000) return `${Math.round(ms / 60_000)}m`;
+	return `${Math.round(ms / 1_000)}s`;
+}
+
+function formatRemaining(expiresAt: number): string {
+	const mins = Math.max(0, Math.round((expiresAt - Date.now()) / 60_000));
+	if (mins >= 60) return `${Math.floor(mins / 60)}h${mins % 60}m`;
+	return `${mins}m`;
+}
 
 export async function openTasksPanel(
 	ctx: ExtensionContext,
@@ -22,42 +44,75 @@ export async function openTasksPanel(
 			let confirming = false;
 			const cancelled = new Set<string>();
 
-			const renderTasks = (): string[] => {
-				const now = Date.now();
-				const lines: string[] = [];
-				lines.push(theme.bold("  ⏱ 定时任务管理"));
-				lines.push("");
-				for (let i = 0; i < active.length; i++) {
-					const t = active[i];
-					const remaining = Math.max(
-						0,
-						Math.round((t.expiresAt - now) / 60_000),
+			const render = () => {
+				const container = new Container();
+				bdr(container, theme);
+				ln(container, theme, theme.fg("accent", theme.bold(" ⏱ 定时任务")));
+				sp(container);
+
+				if (active.length === 0) {
+					ln(
+						container,
+						theme,
+						theme.fg("dim", "  没有活跃的定时任务"),
 					);
-					const tag = t.recurring ? "↻" : "⏰";
-					const isCancelled = cancelled.has(t.id);
-					const isSelected = i === selected;
-					const cursor = isSelected ? "> " : "  ";
-					const status = isCancelled ? " [已取消]" : "";
-					const prompt =
-						t.prompt.length > 45
-							? t.prompt.slice(0, 42) + "..."
-							: t.prompt;
-					lines.push(
-						`${cursor}${tag} ${prompt}  (${remaining}m)${status}`,
-					);
-				}
-				lines.push("");
-				if (confirming) {
-					lines.push(theme.bold("  确认取消当前任务? y/n"));
 				} else {
-					lines.push("  ↑↓ 选择  d 取消  Esc 退出");
+					for (let i = 0; i < active.length; i++) {
+						const t = active[i];
+						const isCancelled = cancelled.has(t.id);
+						const isSelected = i === selected;
+						const ptr = isSelected
+							? theme.fg("accent", "→ ")
+							: "  ";
+						const tag = t.recurring
+							? theme.fg("accent", "↻")
+							: theme.fg("text", "⏰");
+						const prompt =
+							t.prompt.length > 35
+								? t.prompt.slice(0, 32) + "..."
+								: t.prompt;
+						const interval = formatInterval(t.interval);
+						const remaining = formatRemaining(t.expiresAt);
+						const status = isCancelled
+							? theme.fg("dim", " 已取消")
+							: theme.fg("dim", ` ${remaining}后触发`);
+						ln(
+							container,
+							theme,
+							`${ptr}${tag} ${theme.fg("text", prompt.padEnd(35))} ${theme.fg("dim", interval.padStart(4))}${status}`,
+						);
+					}
 				}
-				return lines;
+
+				sp(container);
+				if (confirming) {
+					ln(
+						container,
+						theme,
+						theme.fg("accent", theme.bold("  确认取消?")) +
+							" " +
+							theme.fg("dim", "y 确认 · n 取消"),
+					);
+				} else {
+					ln(
+						container,
+						theme,
+						theme.fg("dim", " ↑↓ 选择 · d 取消 · Esc 退出"),
+					);
+				}
+				bdr(container, theme);
+				tui.requestRender();
+				return container;
 			};
 
+			let currentContainer = render();
+
 			return {
-				render: (_w: number) => renderTasks(),
-				invalidate: () => {},
+				render: (w: number) => {
+					currentContainer = render();
+					return currentContainer.render(w);
+				},
+				invalidate: () => currentContainer.invalidate(),
 				handleInput: (kd: unknown) => {
 					if (confirming) {
 						if (kd === "y" || kd === "Y") {
@@ -70,7 +125,7 @@ export async function openTasksPanel(
 							tui.requestRender();
 							return;
 						}
-						if (kd === "n" || kd === "N") {
+						if (kd === "n" || kd === "N" || kb.matches(kd, "tui.select.cancel")) {
 							confirming = false;
 							tui.requestRender();
 							return;
@@ -85,14 +140,22 @@ export async function openTasksPanel(
 						selected = Math.min(active.length - 1, selected + 1);
 						tui.requestRender();
 					} else if (kd === "d" || kd === "D") {
-						confirming = true;
-						tui.requestRender();
+						if (active.length > 0) {
+							confirming = true;
+							tui.requestRender();
+						}
 					} else if (kb.matches(kd, "tui.select.cancel")) {
 						done(undefined);
 					}
 				},
 			};
 		},
-		{ overlay: true },
+		{
+			overlay: true,
+			overlayOptions: {
+				position: "bottom" as any,
+				maxHeight: 20,
+			},
+		},
 	);
 }

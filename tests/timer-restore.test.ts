@@ -7,7 +7,7 @@ import { createTimerEngine } from "../timer-engine";
 
 function createMockPi() {
   return {
-    sendUserMessage: vi.fn(),
+    sendMessage: vi.fn(),
     appendEntry: vi.fn(),
   };
 }
@@ -60,9 +60,9 @@ describe("createTimerEngine — restore & edge cases", () => {
 
     // 应该在剩余时间后触发
     vi.advanceTimersByTime(200_000 + 30_000);
-    expect(pi.sendUserMessage).toHaveBeenCalledWith(
-      `[定时任务 abc12345] check`,
-      { deliverAs: "followUp" },
+    expect(pi.sendMessage).toHaveBeenCalledWith(
+      { customType: "scheduler", display: true, content: "[定时任务 abc12345] check" },
+      { triggerTurn: true },
     );
   });
 
@@ -160,7 +160,7 @@ describe("createTimerEngine — restore & edge cases", () => {
 
     vi.advanceTimersByTime(300_000 + 30_000);
 
-    expect(pi.sendUserMessage).not.toHaveBeenCalled();
+    expect(pi.sendMessage).not.toHaveBeenCalled();
     expect(timer.firedCount).toBe(0);
   });
 
@@ -172,7 +172,7 @@ describe("createTimerEngine — restore & edge cases", () => {
 
     vi.advanceTimersByTime(60_000 + 5_000);
     expect(timer.status).toBe("completed");
-    expect(pi.sendUserMessage).toHaveBeenCalledOnce();
+    expect(pi.sendMessage).toHaveBeenCalledOnce();
 
     const result = engine.cancel(timer.id);
     expect(result).toBe(true);
@@ -189,13 +189,13 @@ describe("createTimerEngine — restore & edge cases", () => {
     engine.cleanup();
 
     vi.advanceTimersByTime(3_600_000);
-    expect(pi.sendUserMessage).not.toHaveBeenCalled();
+    expect(pi.sendMessage).not.toHaveBeenCalled();
   });
 
   // --- error handling ---
 
-  it("should_not_crash_when_sendUserMessage_throws", () => {
-    pi.sendUserMessage.mockImplementation(() => {
+  it("should_not_crash_when_sendMessage_throws", () => {
+    pi.sendMessage.mockImplementation(() => {
       throw new Error("session replaced");
     });
 

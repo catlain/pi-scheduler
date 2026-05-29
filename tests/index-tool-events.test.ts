@@ -28,7 +28,7 @@ function createMockPi() {
 		registerCommand: vi.fn((name, def) => commands.set(name, def)),
 		registerTool: vi.fn((def) => tools.set(def.name, def)),
 		on: vi.fn((evt, handler) => events.set(evt, handler)),
-		sendUserMessage: vi.fn(),
+		sendMessage: vi.fn(),
 		appendEntry: vi.fn(),
 	} as unknown as ExtensionAPI;
 	return { api, commands, tools, events };

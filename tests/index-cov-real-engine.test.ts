@@ -34,7 +34,7 @@ function createMockPi() {
 		registerCommand: vi.fn((name, def) => commands.set(name, def)),
 		registerTool: vi.fn((def) => tools.set(def.name, def)),
 		on: vi.fn((evt, handler) => events.set(evt, handler)),
-		sendUserMessage: vi.fn(),
+		sendMessage: vi.fn(),
 		appendEntry: vi.fn(),
 	} as unknown as ExtensionAPI;
 	return { api, commands, tools, events };
@@ -149,12 +149,13 @@ describe("index.ts coverage: real engine paths", () => {
 		});
 		await mockPi.commands.get("loop")!.handler("1m recurring check", ctx);
 
-		vi.mocked(mockPi.api.sendUserMessage).mockClear();
+		vi.mocked(mockPi.api.sendMessage).mockClear();
 
 		vi.advanceTimersByTime(60_000 + 30_000);
 
-		expect(vi.mocked(mockPi.api.sendUserMessage)).toHaveBeenCalledWith(
-			expect.stringContaining("recurring check"),
+		expect(vi.mocked(mockPi.api.sendMessage)).toHaveBeenCalledWith(
+			expect.objectContaining({ content: expect.stringContaining("recurring check") }),
+			expect.objectContaining({ triggerTurn: true }),
 		);
 	});
 

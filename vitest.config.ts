@@ -1,11 +1,11 @@
-import { defineConfig } from "vitest/config";
+import { createConfig } from "../vitest.config.base";
 
-export default defineConfig({
+export default createConfig({
+	alias: {
+		"@earendil-works/pi-coding-agent": true,
+		"@earendil-works/pi-tui": "/home/lain/.local/share/fnm/node-versions/v22.22.2/installation/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@earendil-works/pi-tui/dist/index.js",
+	},
 	test: {
-		include: ["tests/**/*.test.ts"],
-		coverage: {
-			provider: "v8" as const,
-			reporter: ["text", "html"],
-		},
+		fileParallelism: false,
 	},
 });

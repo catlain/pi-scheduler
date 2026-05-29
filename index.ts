@@ -23,7 +23,7 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 
 	let engine = createTimerEngine(
 		{
-			sendUserMessage: (msg) => pi.sendUserMessage(msg),
+			sendMessage: (msg, opts) => pi.sendMessage(msg, opts),
 			appendEntry: (type, data) => pi.appendEntry(type, data),
 		},
 		() => {},
@@ -159,7 +159,7 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 		const newUpdateUI = createUpdateUI(() => cachedUi, () => engine);
 		engine = createTimerEngine(
 			{
-				sendUserMessage: (msg) => pi.sendUserMessage(msg),
+				sendMessage: (msg, opts) => pi.sendMessage(msg, opts),
 				appendEntry: (type, data) => pi.appendEntry(type, data),
 			},
 			newUpdateUI,

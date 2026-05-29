@@ -30,7 +30,7 @@ function createMockPi() {
 		registerCommand: vi.fn((name, def) => commands.set(name, def)),
 		registerTool: vi.fn((def) => tools.set(def.name, def)),
 		on: vi.fn((evt, handler) => events.set(evt, handler)),
-		sendUserMessage: vi.fn(),
+		sendMessage: vi.fn(),
 		appendEntry: vi.fn(),
 	} as unknown as ExtensionAPI;
 	return { api, commands, tools, events };
@@ -120,7 +120,10 @@ describe("scheduler commands", () => {
 		]);
 		const ctx = createMockCtx();
 		await mockPi.commands.get("tasks")!.handler("", ctx);
-		expect(ctx.ui.custom).toHaveBeenCalledWith(expect.any(Function), { overlay: true });
+		expect(ctx.ui.custom).toHaveBeenCalledWith(
+			expect.any(Function),
+			expect.objectContaining({ overlay: true }),
+		);
 	});
 
 	it("should_cancel_task_by_id", async () => {

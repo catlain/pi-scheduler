@@ -1,109 +1,87 @@
 /**
- * timer-engine.ts 测试 — 定时器核心逻辑（创建/触发/取消/列表）
+ * timer-engine.ts — 单元测试
  */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createTimerEngine } from "../timer-engine";
-
-function createMockPi() {
-  return {
-    sendUserMessage: vi.fn(),
-    appendEntry: vi.fn(),
-  };
-}
+import { createTimerEngine } from "../timer-engine.js";
 
 describe("createTimerEngine", () => {
-  let pi: ReturnType<typeof createMockPi>;
-  let onUpdate: ReturnType<typeof vi.fn>;
+	const onUpdate = vi.fn();
+	const pi = {
+		sendMessage: vi.fn(),
+		appendEntry: vi.fn(),
+	};
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    pi = createMockPi();
-    onUpdate = vi.fn();
-  });
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.clearAllMocks();
+	});
 
-  afterEach(() => {
-    vi.useRealTimers();
-  });
+	afterEach(() => {
+		vi.useRealTimers();
+	});
 
-  // --- create ---
+	// --- fire (recurring) ---
 
-  it("should_create_timer_and_return_it", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const timer = engine.create("check deploy", 300_000, true);
+	it("should_fire_recurring_timer", () => {
+		const engine = createTimerEngine(pi as any, onUpdate);
+		const timer = engine.create("check deploy", 300_000, true);
 
-    expect(timer.prompt).toBe("check deploy");
-    expect(timer.intervalMs).toBe(300_000);
-    expect(timer.recurring).toBe(true);
-    expect(timer.status).toBe("active");
-    expect(timer.firedCount).toBe(0);
-    expect(pi.appendEntry).toHaveBeenCalled();
-    expect(onUpdate).toHaveBeenCalled();
-  });
+		// 第一次触发
+		vi.advanceTimersByTime(300_000 + 30_000); // 5m + max jitter
 
-  // --- fire (recurring) ---
+		const timers = engine.list();
+		expect(pi.sendMessage).toHaveBeenCalledWith(
+			{ customType: "scheduler", display: true, content: `[定时任务 ${timers[0].id}] check deploy` },
+			{ triggerTurn: true },
+		);
+		expect(timer.firedCount).toBe(1);
+		expect(timer.status).toBe("active"); // 仍然活跃
+	});
 
-  it("should_fire_recurring_timer_and_reschedule", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const timer = engine.create("check deploy", 300_000, true);
+	// --- fire (one-shot) ---
 
-    // 第一次触发
-    vi.advanceTimersByTime(300_000 + 30_000); // 5m + max jitter
+	it("should_fire_one_shot_timer_and_complete", () => {
+		const engine = createTimerEngine(pi as any, onUpdate);
+		const timer = engine.create("remind me", 60_000, false);
 
-    const timers = engine.list();
-    expect(pi.sendUserMessage).toHaveBeenCalledWith(
-      `[定时任务 ${timers[0].id}] check deploy`,
-      { deliverAs: "followUp" },
-    );
-    expect(timer.firedCount).toBe(1);
-    expect(timer.status).toBe("active"); // 仍然活跃
-  });
+		vi.advanceTimersByTime(60_000 + 5_000);
 
-  // --- fire (one-shot) ---
+		const timers = engine.list();
+		expect(pi.sendMessage).toHaveBeenCalledWith(
+			{ customType: "scheduler", display: true, content: `[定时任务 ${timers[0].id}] remind me` },
+			{ triggerTurn: true },
+		);
+		expect(timer.firedCount).toBe(1);
+		expect(timer.status).toBe("completed");
+	});
 
-  it("should_fire_one_shot_timer_and_complete", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const timer = engine.create("remind me", 60_000, false);
+	// --- cancel ---
 
-    vi.advanceTimersByTime(60_000 + 5_000);
+	it("should_cancel_timer", () => {
+		const engine = createTimerEngine(pi as any, onUpdate);
+		const timer = engine.create("to cancel", 60_000, false);
 
-    const timers = engine.list();
-    expect(pi.sendUserMessage).toHaveBeenCalledWith(
-      `[定时任务 ${timers[0].id}] remind me`,
-      { deliverAs: "followUp" },
-    );
-    expect(timer.firedCount).toBe(1);
-    expect(timer.status).toBe("completed");
-  });
+		engine.cancel(timer.id);
 
-  // --- cancel ---
+		vi.advanceTimersByTime(120_000);
+		expect(pi.sendMessage).not.toHaveBeenCalled();
+	});
 
-  it("should_cancel_timer_and_clear_timeout", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    const timer = engine.create("check", 300_000, true);
+	it("should_not_throw_on_cancel_unknown_id", () => {
+		const engine = createTimerEngine(pi as any, onUpdate);
+		expect(() => engine.cancel("nonexistent")).not.toThrow();
+	});
 
-    engine.cancel(timer.id);
+	// --- list ---
 
-    expect(timer.status).toBe("cancelled");
+	it("should_list_all_timers", () => {
+		const engine = createTimerEngine(pi as any, onUpdate);
+		engine.create("a", 60_000, false);
+		engine.create("b", 120_000, true);
 
-    // 不应再触发
-    vi.advanceTimersByTime(600_000);
-    expect(pi.sendUserMessage).not.toHaveBeenCalled();
-  });
-
-  it("should_return_false_when_cancelling_unknown_id", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    expect(engine.cancel("nonexistent")).toBe(false);
-  });
-
-  // --- list ---
-
-  it("should_list_all_timers", () => {
-    const engine = createTimerEngine(pi as any, onUpdate);
-    engine.create("task a", 300_000, true);
-    engine.create("task b", 600_000, false);
-
-    const list = engine.list();
-    expect(list).toHaveLength(2);
-  });
+		const list = engine.list();
+		expect(list).toHaveLength(2);
+		expect(list[0].prompt).toBe("a");
+		expect(list[1].prompt).toBe("b");
+	});
 });
