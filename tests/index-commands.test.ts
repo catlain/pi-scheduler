@@ -39,7 +39,12 @@ function createMockPi() {
 function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext {
 	return {
 		cwd: "/tmp/test",
-		ui: { notify: vi.fn(), setStatus: vi.fn(), setWidget: vi.fn() },
+		ui: {
+			notify: vi.fn(),
+			setStatus: vi.fn(),
+			setWidget: vi.fn(),
+			custom: vi.fn(async () => {}),
+		},
 		sessionManager: { getEntries: vi.fn(() => []) },
 		...overrides,
 	} as unknown as ExtensionContext;
@@ -115,7 +120,7 @@ describe("scheduler commands", () => {
 		]);
 		const ctx = createMockCtx();
 		await mockPi.commands.get("tasks")!.handler("", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("check"), "info");
+		expect(ctx.ui.custom).toHaveBeenCalledWith(expect.any(Function), { overlay: true });
 	});
 
 	it("should_cancel_task_by_id", async () => {

@@ -43,7 +43,12 @@ function createMockPi() {
 function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext {
 	return {
 		cwd: "/tmp/test",
-		ui: { notify: vi.fn(), setStatus: vi.fn(), setWidget: vi.fn() },
+		ui: {
+			notify: vi.fn(),
+			setStatus: vi.fn(),
+			setWidget: vi.fn(),
+			custom: vi.fn(async () => {}),
+		},
 		sessionManager: { getEntries: vi.fn(() => []) },
 		...overrides,
 	} as unknown as ExtensionContext;
@@ -76,7 +81,7 @@ describe("index.ts coverage: real engine paths", () => {
 		expect(vi.mocked(ctx.ui.setStatus)).not.toHaveBeenCalled();
 	});
 
-	it("should_clear_widget_on_empty_list", async () => {
+	it("should_clear_status_on_empty_list", async () => {
 		const ctx = createMockCtx();
 		const startHandler = mockPi.events.get("session_start")!;
 		await startHandler({}, ctx);
@@ -86,13 +91,9 @@ describe("index.ts coverage: real engine paths", () => {
 			"scheduler",
 			undefined,
 		);
-		expect(vi.mocked(ctx.ui.setWidget)).toHaveBeenCalledWith(
-			"scheduler",
-			undefined,
-		);
 	});
 
-	it("should_render_widget_after_creating_timer", async () => {
+	it("should_update_status_after_creating_timer", async () => {
 		mockParseLoopArgs.mockReturnValue({
 			prompt: "loop task",
 			intervalMs: 120000,
@@ -102,27 +103,15 @@ describe("index.ts coverage: real engine paths", () => {
 		const startHandler = mockPi.events.get("session_start")!;
 		await startHandler({}, ctx);
 
-		// calls[0] = setWidget("scheduler", undefined) from empty restore
-		// Create timer -> onUpdate -> active.length === 1
 		await mockPi.commands.get("loop")!.handler("2m loop task", ctx);
 
-		// calls[1] = setWidget("scheduler", callback)
+		// calls[1] = setStatus("scheduler", "⏱ 1")
 		expect(vi.mocked(ctx.ui.setStatus).mock.calls[1][0]).toBe("scheduler");
 		expect(vi.mocked(ctx.ui.setStatus).mock.calls[1][1]).toContain("⏱");
-
-		const widgetCallback = vi.mocked(ctx.ui.setWidget).mock
-			.calls[1][1] as unknown as (
-			tui: unknown,
-			t: Theme,
-		) => { render: () => string[]; invalidate: () => void };
-		const widget = widgetCallback({}, theme);
-		const lines = widget.render();
-		expect(lines.length).toBeGreaterThanOrEqual(2);
-		expect(lines[0]).toContain("Scheduler");
-		expect(lines.some((l: string) => l.includes("loop task"))).toBe(true);
+		expect(vi.mocked(ctx.ui.setStatus).mock.calls[1][1]).toContain("1");
 	});
 
-	it("should_render_mixed_timer_types", async () => {
+	it("should_update_status_count_for_mixed_timer_types", async () => {
 		const ctx = createMockCtx();
 		const startHandler = mockPi.events.get("session_start")!;
 		await startHandler({}, ctx);
@@ -138,8 +127,6 @@ describe("index.ts coverage: real engine paths", () => {
 			});
 
 		await mockPi.commands.get("loop")!.handler("5m recurring task", ctx);
-
-		vi.mocked(ctx.ui.setWidget).mockClear();
 		vi.mocked(ctx.ui.setStatus).mockClear();
 
 		await mockPi.commands.get("remind")!.handler(
@@ -147,18 +134,8 @@ describe("index.ts coverage: real engine paths", () => {
 			ctx,
 		);
 
+		// 2 active timers
 		expect(vi.mocked(ctx.ui.setStatus).mock.calls[0][1]).toContain("2");
-
-		const widgetCallback = vi.mocked(ctx.ui.setWidget).mock
-			.calls[0][1] as unknown as (
-			tui: unknown,
-			t: Theme,
-		) => { render: () => string[]; invalidate: () => void };
-		const widget = widgetCallback({}, theme);
-		const lines = widget.render();
-		expect(lines.length).toBeGreaterThanOrEqual(3);
-		expect(lines.some((l: string) => l.includes("↻"))).toBe(true);
-		expect(lines.some((l: string) => l.includes("⏰"))).toBe(true);
 	});
 
 	it("should_call_onUpdate_when_timer_fires", async () => {
