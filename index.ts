@@ -168,10 +168,6 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 		);
 		// 先从文件恢复跨会话持久化的 timer
 		const sessionId = ctx.sessionManager.getSessionId();
-		const fs = require("fs");
-		const path = require("path");
-		fs.appendFileSync(path.join(require("os").homedir(), ".pi", "scheduler-debug.log"),
-			`[${new Date().toISOString()}] session_start: sessionId="${sessionId}" type=${typeof sessionId}\n`);
 		if (sessionId) {
 			const fileTimers = restoreTimersFromFile(sessionId);
 			const existingIds = new Set(engine.list().map((t) => t.id));
