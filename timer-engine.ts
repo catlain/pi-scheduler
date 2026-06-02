@@ -26,7 +26,9 @@ export function createTimerEngine(
 
 	function persist(): void {
 		_pi.appendEntry("scheduler", { timers: Array.from(timers.values()) });
-		persistTimersToFile(Array.from(timers.values()), sessionId);
+		if (sessionId) {
+			persistTimersToFile(Array.from(timers.values()), sessionId);
+		}
 	}
 
 	function schedule(timer: Timer): void {
