@@ -38,7 +38,7 @@ function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext 
 	return {
 		cwd: "/tmp/test",
 		ui: { notify: vi.fn(), setStatus: vi.fn(), setWidget: vi.fn() },
-		sessionManager: { getEntries: vi.fn(() => []) },
+		sessionManager: { getEntries: vi.fn(() => []), getSessionId: vi.fn(() => "test-session-id") },
 		...overrides,
 	} as unknown as ExtensionContext;
 }

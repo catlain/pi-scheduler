@@ -167,7 +167,7 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 			newUpdateUI,
 		);
 		// 先从文件恢复跨会话持久化的 timer
-		const fileTimers = restoreTimersFromFile();
+		const fileTimers = restoreTimersFromFile(ctx.sessionManager.getSessionId());
 		// 再从当前会话 entries 恢复
 		const entries = ctx.sessionManager.getEntries();
 		engine.restore(entries);

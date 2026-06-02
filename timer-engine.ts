@@ -17,15 +17,16 @@ export interface TimerEngine {
 }
 
 export function createTimerEngine(
-	pi: { sendMessage: (msg: { customType: string; display: boolean; content: string }, opts?: { triggerTurn?: boolean }) => void; appendEntry: (type: string, data: unknown) => void },
+	_pi: { sendMessage: (msg: { customType: string; display: boolean; content: string }, opts?: { triggerTurn?: boolean }) => void; appendEntry: (type: string, data: unknown) => void },
 	onUpdate: () => void,
+	sessionId?: string,
 ): TimerEngine {
 	const timers = new Map<string, Timer>();
 	const handles = new Map<string, ReturnType<typeof setTimeout>>();
 
 	function persist(): void {
-		pi.appendEntry("scheduler", { timers: Array.from(timers.values()) });
-		persistTimersToFile(Array.from(timers.values()));
+		_pi.appendEntry("scheduler", { timers: Array.from(timers.values()) });
+		persistTimersToFile(Array.from(timers.values()), sessionId);
 	}
 
 	function schedule(timer: Timer): void {
@@ -39,7 +40,7 @@ export function createTimerEngine(
 		if (!timer || timer.status !== "active") return;
 
 		try {
-			pi.sendMessage(
+			_pi.sendMessage(
 				{ customType: "scheduler", display: false, content: `[定时任务 ${id}] ${timer.prompt}` },
 				{ triggerTurn: true },
 			);

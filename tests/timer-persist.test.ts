@@ -14,7 +14,7 @@ vi.mock("fs", () => ({
 }));
 
 import { writeFileSync, readFileSync, existsSync } from "fs";
-import { persistTimersToFile, restoreTimersFromFile, SCHEDULER_STATE_FILE } from "../timer-persist";
+import { persistTimersToFile, restoreTimersFromFile, getStateFilePath } from "../timer-persist";
 
 const mockWriteFileSync = vi.mocked(writeFileSync);
 const mockReadFileSync = vi.mocked(readFileSync);
@@ -38,9 +38,9 @@ describe("timer-persist", () => {
 		status: "active",
 	  },
 	];
-	persistTimersToFile(timers);
+	persistTimersToFile(timers, "sess-abc");
 	expect(mockWriteFileSync).toHaveBeenCalledWith(
-	  SCHEDULER_STATE_FILE,
+	  getStateFilePath("sess-abc"),
 	  expect.any(String),
 	  "utf-8",
 	);
@@ -91,7 +91,7 @@ describe("timer-persist", () => {
 	it("should return empty array on malformed JSON", () => {
 	mockExistsSync.mockReturnValue(true);
 	mockReadFileSync.mockReturnValue("not json");
-	const restored = restoreTimersFromFile();
+	const restored = restoreTimersFromFile("sess-abc");
 	expect(restored).toEqual([]);
 	});
 
@@ -101,7 +101,7 @@ describe("timer-persist", () => {
 	mockReadFileSync.mockReturnValue(JSON.stringify([
 	  { id: "rec1", prompt: "loop check", intervalMs: 60_000, createdAt: now - 120_000, expiresAt: now - 60_000, recurring: true, firedCount: 5, status: "active" },
 	]));
-	const restored = restoreTimersFromFile();
+	const restored = restoreTimersFromFile("sess-abc");
 	expect(restored).toHaveLength(1);
 	// 应该重新计算 expiresAt = now + intervalMs
 	expect(restored[0].expiresAt).toBeGreaterThan(now);

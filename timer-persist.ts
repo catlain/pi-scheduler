@@ -11,16 +11,20 @@ import { join } from "path";
 import type { Timer } from "./types";
 
 export const SCHEDULER_STATE_DIR = join(homedir(), ".pi", "agent");
-export const SCHEDULER_STATE_FILE = join(SCHEDULER_STATE_DIR, "scheduler-state.json");
+
+/** 获取指定 session 的持久化文件路径 */
+export function getStateFilePath(sessionId: string): string {
+	return join(SCHEDULER_STATE_DIR, `scheduler-state-${sessionId}.json`);
+}
 
 /**
  * 持久化 active timer 到文件
  */
-export function persistTimersToFile(timers: Timer[]): void {
+export function persistTimersToFile(timers: Timer[], sessionId: string): void {
 	const active = timers.filter((t) => t.status === "active");
 	try {
 		mkdirSync(SCHEDULER_STATE_DIR, { recursive: true });
-		writeFileSync(SCHEDULER_STATE_FILE, JSON.stringify(active, null, 2), "utf-8");
+		writeFileSync(getStateFilePath(sessionId), JSON.stringify(active, null, 2), "utf-8");
 	} catch {
 		// 静默失败 — 持久化失败不应影响主流程
 	}
@@ -32,13 +36,14 @@ export function persistTimersToFile(timers: Timer[]): void {
  * - 跳过已过期的非循环 timer
  * - 循环 timer 如果已过期，重新计算 expiresAt
  */
-export function restoreTimersFromFile(): Timer[] {
-	if (!existsSync(SCHEDULER_STATE_FILE)) {
+export function restoreTimersFromFile(sessionId: string): Timer[] {
+	const filePath = getStateFilePath(sessionId);
+	if (!existsSync(filePath)) {
 		return [];
 	}
 
 	try {
-		const raw = readFileSync(SCHEDULER_STATE_FILE, "utf-8");
+		const raw = readFileSync(filePath, "utf-8");
 		const timers: Timer[] = JSON.parse(raw);
 		const now = Date.now();
 

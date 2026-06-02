@@ -53,7 +53,7 @@ function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext 
 			setWidget: vi.fn(),
 			custom: vi.fn(async () => {}),
 		},
-		sessionManager: { getEntries: vi.fn(() => []) },
+		sessionManager: { getEntries: vi.fn(() => []), getSessionId: vi.fn(() => "test-session-id") },
 		...overrides,
 	} as unknown as ExtensionContext;
 }
