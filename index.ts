@@ -167,17 +167,19 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 			newUpdateUI,
 		);
 		// 先从文件恢复跨会话持久化的 timer
-		const fileTimers = restoreTimersFromFile(ctx.sessionManager.getSessionId());
+		const sessionId = ctx.sessionManager.getSessionId();
+		if (sessionId) {
+			const fileTimers = restoreTimersFromFile(sessionId);
+			const existingIds = new Set(engine.list().map((t) => t.id));
+			for (const t of fileTimers) {
+				if (!existingIds.has(t.id)) {
+					engine.restore([{ type: "custom", customType: "scheduler", data: { timers: [t] } }]);
+				}
+			}
+		}
 		// 再从当前会话 entries 恢复
 		const entries = ctx.sessionManager.getEntries();
 		engine.restore(entries);
-		// 合并文件恢复的 timer（去重）
-		const existingIds = new Set(engine.list().map((t) => t.id));
-		for (const t of fileTimers) {
-			if (!existingIds.has(t.id)) {
-				engine.restore([{ type: "custom", customType: "scheduler", data: { timers: [t] } }]);
-			}
-		}
 	});
 
 	pi.on("session_shutdown", async () => {
