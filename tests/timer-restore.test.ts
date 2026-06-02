@@ -61,7 +61,7 @@ describe("createTimerEngine — restore & edge cases", () => {
     // 应该在剩余时间后触发
     vi.advanceTimersByTime(200_000 + 30_000);
     expect(pi.sendMessage).toHaveBeenCalledWith(
-      { customType: "scheduler", display: true, content: "[定时任务 abc12345] check" },
+      { customType: "scheduler", display: false, content: "[定时任务 abc12345] check" },
       { triggerTurn: true },
     );
   });

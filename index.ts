@@ -17,6 +17,7 @@ import { parseLoopArgs } from "./parser";
 import { createTimerEngine } from "./timer-engine";
 import { openTasksPanel } from "./tasks-panel";
 import { createUpdateUI, readLoopMd } from "./ui-helpers";
+import { restoreTimersFromFile } from "./timer-persist";
 
 export default function schedulerExtension(pi: ExtensionAPI): void {
 	let cachedUi: ExtensionContext["ui"] | null = null;
@@ -157,7 +158,6 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 		cachedUi = ctx.ui;
 		// 清理旧 engine 的所有 setTimeout，防止泄漏
 		engine.cleanup();
-		const entries = ctx.sessionManager.getEntries();
 		const newUpdateUI = createUpdateUI(() => cachedUi, () => engine);
 		engine = createTimerEngine(
 			{
@@ -166,7 +166,18 @@ export default function schedulerExtension(pi: ExtensionAPI): void {
 			},
 			newUpdateUI,
 		);
+		// 先从文件恢复跨会话持久化的 timer
+		const fileTimers = restoreTimersFromFile();
+		// 再从当前会话 entries 恢复
+		const entries = ctx.sessionManager.getEntries();
 		engine.restore(entries);
+		// 合并文件恢复的 timer（去重）
+		const existingIds = new Set(engine.list().map((t) => t.id));
+		for (const t of fileTimers) {
+			if (!existingIds.has(t.id)) {
+				engine.restore([{ type: "custom", customType: "scheduler", data: { timers: [t] } }]);
+			}
+		}
 	});
 
 	pi.on("session_shutdown", async () => {

@@ -23,6 +23,10 @@ vi.mock("../parser", () => ({
 	parseLoopArgs: mockParseLoopArgs,
 	parseInterval: vi.fn(),
 }));
+vi.mock("../timer-persist", () => ({
+	restoreTimersFromFile: vi.fn(() => []),
+	persistTimersToFile: vi.fn(),
+}));
 
 import schedulerExtension from "../index";
 

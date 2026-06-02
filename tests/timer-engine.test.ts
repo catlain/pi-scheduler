@@ -31,7 +31,7 @@ describe("createTimerEngine", () => {
 
 		const timers = engine.list();
 		expect(pi.sendMessage).toHaveBeenCalledWith(
-			{ customType: "scheduler", display: true, content: `[定时任务 ${timers[0].id}] check deploy` },
+			{ customType: "scheduler", display: false, content: `[定时任务 ${timers[0].id}] check deploy` },
 			{ triggerTurn: true },
 		);
 		expect(timer.firedCount).toBe(1);
@@ -48,7 +48,7 @@ describe("createTimerEngine", () => {
 
 		const timers = engine.list();
 		expect(pi.sendMessage).toHaveBeenCalledWith(
-			{ customType: "scheduler", display: true, content: `[定时任务 ${timers[0].id}] remind me` },
+			{ customType: "scheduler", display: false, content: `[定时任务 ${timers[0].id}] remind me` },
 			{ triggerTurn: true },
 		);
 		expect(timer.firedCount).toBe(1);
