@@ -2,8 +2,11 @@
  * index.ts 测试 — schedule 工具 + 事件
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockEngine, mockEngineFactory } = vi.hoisted(() => {
 	const engine = {
@@ -16,7 +19,10 @@ const { mockEngine, mockEngineFactory } = vi.hoisted(() => {
 	return { mockEngine: engine, mockEngineFactory: vi.fn(() => engine) };
 });
 vi.mock("../timer-engine", () => ({ createTimerEngine: mockEngineFactory }));
-vi.mock("../parser", () => ({ parseLoopArgs: vi.fn(), parseInterval: vi.fn() }));
+vi.mock("../parser", () => ({
+	parseLoopArgs: vi.fn(),
+	parseInterval: vi.fn(),
+}));
 
 import schedulerExtension from "../index";
 
@@ -34,11 +40,16 @@ function createMockPi() {
 	return { api, commands, tools, events };
 }
 
-function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext {
+function createMockCtx(
+	overrides?: Partial<ExtensionContext>,
+): ExtensionContext {
 	return {
 		cwd: "/tmp/test",
 		ui: { notify: vi.fn(), setStatus: vi.fn(), setWidget: vi.fn() },
-		sessionManager: { getEntries: vi.fn(() => []), getSessionId: vi.fn(() => "test-session-id") },
+		sessionManager: {
+			getEntries: vi.fn(() => []),
+			getSessionId: vi.fn(() => "test-session-id"),
+		},
 		...overrides,
 	} as unknown as ExtensionContext;
 }
@@ -50,7 +61,12 @@ describe("scheduler tool + events", () => {
 		vi.clearAllMocks();
 		mockPi = createMockPi();
 		mockEngine.create.mockReturnValue({
-			id: "t1", prompt: "test", intervalMs: 60000, recurring: false, status: "active", firedCount: 0,
+			id: "t1",
+			prompt: "test",
+			intervalMs: 60000,
+			recurring: false,
+			status: "active",
+			firedCount: 0,
 		});
 		mockEngine.list.mockReturnValue([]);
 		schedulerExtension(mockPi.api);
@@ -60,14 +76,23 @@ describe("scheduler tool + events", () => {
 
 	it("should_create_timer_via_tool", async () => {
 		const tool = mockPi.tools.get("schedule")!;
-		const result = await tool.execute("tc1", { action: "create", interval_ms: 60000, prompt: "remind me" });
+		const result = await tool.execute("tc1", {
+			action: "create",
+			interval_ms: 60000,
+			prompt: "remind me",
+		});
 		expect(mockEngine.create).toHaveBeenCalledWith("remind me", 60000, false);
 		expect(result.content[0].text).toContain("定时任务已创建");
 	});
 
 	it("should_create_recurring_timer_via_tool", async () => {
 		const tool = mockPi.tools.get("schedule")!;
-		await tool.execute("tc1", { action: "create", interval_ms: 300000, prompt: "check", recurring: true });
+		await tool.execute("tc1", {
+			action: "create",
+			interval_ms: 300000,
+			prompt: "check",
+			recurring: true,
+		});
 		expect(mockEngine.create).toHaveBeenCalledWith("check", 300000, true);
 	});
 
@@ -79,7 +104,15 @@ describe("scheduler tool + events", () => {
 
 	it("should_list_active_timers_via_tool", async () => {
 		mockEngine.list.mockReturnValue([
-			{ id: "t1", prompt: "check", intervalMs: 300000, recurring: true, status: "active", expiresAt: Date.now() + 200000, firedCount: 0 },
+			{
+				id: "t1",
+				prompt: "check",
+				intervalMs: 300000,
+				recurring: true,
+				status: "active",
+				expiresAt: Date.now() + 200000,
+				firedCount: 0,
+			},
 		]);
 		const tool = mockPi.tools.get("schedule")!;
 		const result = await tool.execute("tc1", { action: "list" });
@@ -141,7 +174,9 @@ describe("scheduler tool + events", () => {
 		const handler = mockPi.events.get("before_agent_start")!;
 		const ctx = createMockCtx({
 			sessionManager: {
-				getEntries: vi.fn(() => [{ type: "custom", customType: "scheduler", data: {} }]),
+				getEntries: vi.fn(() => [
+					{ type: "custom", customType: "scheduler", data: {} },
+				]),
 			},
 		} as any);
 		await handler({}, ctx);

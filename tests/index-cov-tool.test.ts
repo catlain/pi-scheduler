@@ -5,14 +5,15 @@
  * - 第 92 行: /loop 找到 loop.md 的内容分支
  * - 第 192 行: schedule 工具 cancel 缺少 id 参数
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
 import * as fs from "node:fs";
-import * as path from "node:path";
 import * as os from "node:os";
+import * as path from "node:path";
 import type {
 	ExtensionAPI,
 	ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockParseLoopArgs } = vi.hoisted(() => ({
 	mockParseLoopArgs: vi.fn(),
@@ -38,7 +39,9 @@ function createMockPi() {
 	return { api, commands, tools, events };
 }
 
-function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext {
+function createMockCtx(
+	overrides?: Partial<ExtensionContext>,
+): ExtensionContext {
 	return {
 		cwd: "/tmp/test",
 		ui: { notify: vi.fn(), setStatus: vi.fn(), setWidget: vi.fn() },
@@ -67,9 +70,7 @@ describe("index.ts coverage: /loop + tool paths", () => {
 			intervalMs: 300000,
 		});
 
-		const tmpDir = fs.mkdtempSync(
-			path.join(os.tmpdir(), "scheduler-cov-"),
-		);
+		const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "scheduler-cov-"));
 		fs.mkdirSync(path.join(tmpDir, ".pi"), { recursive: true });
 		fs.writeFileSync(
 			path.join(tmpDir, ".pi", "loop.md"),

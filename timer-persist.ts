@@ -5,9 +5,9 @@
  * 路径：~/.pi/agent/scheduler-state.json
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { homedir } from "os";
-import { join } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { Timer } from "./types";
 
 export const SCHEDULER_STATE_DIR = join(homedir(), ".pi", "agent");
@@ -24,7 +24,11 @@ export function persistTimersToFile(timers: Timer[], sessionId: string): void {
 	const active = timers.filter((t) => t.status === "active");
 	try {
 		mkdirSync(SCHEDULER_STATE_DIR, { recursive: true });
-		writeFileSync(getStateFilePath(sessionId), JSON.stringify(active, null, 2), "utf-8");
+		writeFileSync(
+			getStateFilePath(sessionId),
+			JSON.stringify(active, null, 2),
+			"utf-8",
+		);
 	} catch {
 		// 静默失败 — 持久化失败不应影响主流程
 	}

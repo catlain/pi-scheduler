@@ -2,8 +2,11 @@
  * index.ts 测试 — 命令注册 + /loop + /remind + /tasks
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockEngine, mockEngineFactory } = vi.hoisted(() => {
 	const engine = {
@@ -17,8 +20,13 @@ const { mockEngine, mockEngineFactory } = vi.hoisted(() => {
 });
 vi.mock("../timer-engine", () => ({ createTimerEngine: mockEngineFactory }));
 
-const { mockParseLoopArgs } = vi.hoisted(() => ({ mockParseLoopArgs: vi.fn() }));
-vi.mock("../parser", () => ({ parseLoopArgs: mockParseLoopArgs, parseInterval: vi.fn() }));
+const { mockParseLoopArgs } = vi.hoisted(() => ({
+	mockParseLoopArgs: vi.fn(),
+}));
+vi.mock("../parser", () => ({
+	parseLoopArgs: mockParseLoopArgs,
+	parseInterval: vi.fn(),
+}));
 
 import schedulerExtension from "../index";
 
@@ -36,7 +44,9 @@ function createMockPi() {
 	return { api, commands, tools, events };
 }
 
-function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext {
+function createMockCtx(
+	overrides?: Partial<ExtensionContext>,
+): ExtensionContext {
 	return {
 		cwd: "/tmp/test",
 		ui: {
@@ -51,7 +61,7 @@ function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext 
 }
 
 // 供 tool+events 测试复用
-export { createMockPi, createMockCtx, mockEngine, mockEngineFactory };
+export { createMockCtx, createMockPi, mockEngine, mockEngineFactory };
 
 describe("scheduler commands", () => {
 	let mockPi: ReturnType<typeof createMockPi>;
@@ -60,7 +70,12 @@ describe("scheduler commands", () => {
 		vi.clearAllMocks();
 		mockPi = createMockPi();
 		mockEngine.create.mockReturnValue({
-			id: "t1", prompt: "test", intervalMs: 300000, recurring: true, status: "active", firedCount: 0,
+			id: "t1",
+			prompt: "test",
+			intervalMs: 300000,
+			recurring: true,
+			status: "active",
+			firedCount: 0,
 		});
 		mockEngine.list.mockReturnValue([]);
 		schedulerExtension(mockPi.api);
@@ -81,10 +96,17 @@ describe("scheduler commands", () => {
 	// --- /loop ---
 
 	it("should_create_recurring_timer_via_loop", async () => {
-		mockParseLoopArgs.mockReturnValue({ prompt: "check deploy", intervalMs: 300000 });
+		mockParseLoopArgs.mockReturnValue({
+			prompt: "check deploy",
+			intervalMs: 300000,
+		});
 		const ctx = createMockCtx();
 		await mockPi.commands.get("loop")!.handler("5m check deploy", ctx);
-		expect(mockEngine.create).toHaveBeenCalledWith("check deploy", 300000, true);
+		expect(mockEngine.create).toHaveBeenCalledWith(
+			"check deploy",
+			300000,
+			true,
+		);
 		expect(ctx.ui.notify.mock.calls[0][0]).toContain("循环任务");
 	});
 
@@ -92,16 +114,26 @@ describe("scheduler commands", () => {
 		mockParseLoopArgs.mockReturnValue({ prompt: null, intervalMs: 300000 });
 		const ctx = createMockCtx({ cwd: "/nonexistent/path" } as any);
 		await mockPi.commands.get("loop")!.handler("", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("loop.md"), "warning");
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining("loop.md"),
+			"warning",
+		);
 	});
 
 	// --- /remind ---
 
 	it("should_create_one_shot_via_remind", async () => {
-		mockParseLoopArgs.mockReturnValue({ prompt: "check tests", intervalMs: 2700000 });
+		mockParseLoopArgs.mockReturnValue({
+			prompt: "check tests",
+			intervalMs: 2700000,
+		});
 		const ctx = createMockCtx();
 		await mockPi.commands.get("remind")!.handler("45m check tests", ctx);
-		expect(mockEngine.create).toHaveBeenCalledWith("check tests", 2700000, false);
+		expect(mockEngine.create).toHaveBeenCalledWith(
+			"check tests",
+			2700000,
+			false,
+		);
 		expect(ctx.ui.notify.mock.calls[0][0]).toContain("提醒");
 	});
 
@@ -109,14 +141,25 @@ describe("scheduler commands", () => {
 		mockParseLoopArgs.mockReturnValue({ prompt: null, intervalMs: 0 });
 		const ctx = createMockCtx();
 		await mockPi.commands.get("remind")!.handler("", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("用法"), "warning");
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining("用法"),
+			"warning",
+		);
 	});
 
 	// --- /tasks ---
 
 	it("should_list_active_tasks", async () => {
 		mockEngine.list.mockReturnValue([
-			{ id: "t1", prompt: "check", intervalMs: 300000, recurring: true, status: "active", expiresAt: Date.now() + 200000, firedCount: 0 },
+			{
+				id: "t1",
+				prompt: "check",
+				intervalMs: 300000,
+				recurring: true,
+				status: "active",
+				expiresAt: Date.now() + 200000,
+				firedCount: 0,
+			},
 		]);
 		const ctx = createMockCtx();
 		await mockPi.commands.get("tasks")!.handler("", ctx);
@@ -138,13 +181,19 @@ describe("scheduler commands", () => {
 		mockEngine.cancel.mockReturnValue(false);
 		const ctx = createMockCtx();
 		await mockPi.commands.get("tasks")!.handler("cancel xxx", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("未找到"), "warning");
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining("未找到"),
+			"warning",
+		);
 	});
 
 	it("should_show_empty_message_when_no_tasks", async () => {
 		mockEngine.list.mockReturnValue([]);
 		const ctx = createMockCtx();
 		await mockPi.commands.get("tasks")!.handler("", ctx);
-		expect(ctx.ui.notify).toHaveBeenCalledWith(expect.stringContaining("没有"), "info");
+		expect(ctx.ui.notify).toHaveBeenCalledWith(
+			expect.stringContaining("没有"),
+			"info",
+		);
 	});
 });

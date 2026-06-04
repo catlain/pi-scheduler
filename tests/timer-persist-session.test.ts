@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { join } from "path";
-import { homedir } from "os";
-import * as fs from "fs";
-import { getStateFilePath, persistTimersToFile, restoreTimersFromFile } from "../timer-persist";
+import * as fs from "node:fs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	getStateFilePath,
+	persistTimersToFile,
+	restoreTimersFromFile,
+} from "../timer-persist";
 
 // Mock fs
 vi.mock("fs", () => ({
@@ -28,10 +30,25 @@ describe("timer-persist — per-session isolation", () => {
 
 	it("should_only_restore_timers_from_current_session", () => {
 		const timersA = [
-			{ id: "timer-1", intervalMs: 60000, prompt: "task A", recurring: true, status: "active", createdAt: Date.now() },
+			{
+				id: "timer-1",
+				intervalMs: 60000,
+				prompt: "task A",
+				recurring: true,
+				status: "active",
+				createdAt: Date.now(),
+			},
 		];
 		const timersB = [
-			{ id: "timer-2", intervalMs: 120000, prompt: "task B", recurring: false, status: "active", createdAt: Date.now(), expiresAt: Date.now() + 120000 },
+			{
+				id: "timer-2",
+				intervalMs: 120000,
+				prompt: "task B",
+				recurring: false,
+				status: "active",
+				createdAt: Date.now(),
+				expiresAt: Date.now() + 120000,
+			},
 		];
 
 		// Session A persists

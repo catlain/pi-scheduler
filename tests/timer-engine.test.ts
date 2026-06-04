@@ -1,7 +1,7 @@
 /**
  * timer-engine.ts — 单元测试
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTimerEngine } from "../timer-engine.js";
 
 describe("createTimerEngine", () => {
@@ -31,7 +31,11 @@ describe("createTimerEngine", () => {
 
 		const timers = engine.list();
 		expect(pi.sendMessage).toHaveBeenCalledWith(
-			{ customType: "scheduler", display: false, content: `[定时任务 ${timers[0].id}] check deploy` },
+			{
+				customType: "scheduler",
+				display: false,
+				content: `[定时任务 ${timers[0].id}] check deploy`,
+			},
 			{ triggerTurn: true },
 		);
 		expect(timer.firedCount).toBe(1);
@@ -48,7 +52,11 @@ describe("createTimerEngine", () => {
 
 		const timers = engine.list();
 		expect(pi.sendMessage).toHaveBeenCalledWith(
-			{ customType: "scheduler", display: false, content: `[定时任务 ${timers[0].id}] remind me` },
+			{
+				customType: "scheduler",
+				display: false,
+				content: `[定时任务 ${timers[0].id}] remind me`,
+			},
 			{ triggerTurn: true },
 		);
 		expect(timer.firedCount).toBe(1);

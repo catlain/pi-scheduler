@@ -4,7 +4,7 @@
  * 测试面板的交互逻辑：渲染、键盘输入、取消确认流程
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock pi-tui 组件
 vi.mock("@earendil-works/pi-tui", () => ({
@@ -23,7 +23,11 @@ vi.mock("@earendil-works/pi-tui", () => ({
 		invalidate = vi.fn();
 	},
 	Text: class {
-		constructor(public content: string, public w: number, public h: number) {}
+		constructor(
+			public content: string,
+			public w: number,
+			public h: number,
+		) {}
 		render = vi.fn(() => "");
 		invalidate = vi.fn();
 	},
@@ -38,8 +42,8 @@ vi.mock("@earendil-works/pi-coding-agent", () => ({
 }));
 
 import { openTasksPanel } from "../tasks-panel";
-import type { Timer } from "../types";
 import type { TimerEngine } from "../timer-engine";
+import type { Timer } from "../types";
 
 function createMockTimer(overrides?: Partial<Timer>): Timer {
 	return {
@@ -131,12 +135,16 @@ describe("tasks-panel", () => {
 		const { _result, _kb, _tui } = ctx._getFactory();
 
 		// 模拟按 ↓
-		_kb.matches.mockImplementation((_kd: unknown, binding: string) => binding === "tui.select.down");
+		_kb.matches.mockImplementation(
+			(_kd: unknown, binding: string) => binding === "tui.select.down",
+		);
 		_result.handleInput("down");
 		expect(_tui.requestRender).toHaveBeenCalled();
 
 		// 模拟按 ↑
-		_kb.matches.mockImplementation((_kd: unknown, binding: string) => binding === "tui.select.up");
+		_kb.matches.mockImplementation(
+			(_kd: unknown, binding: string) => binding === "tui.select.up",
+		);
 		_result.handleInput("up");
 		expect(_tui.requestRender.mock.calls.length).toBeGreaterThanOrEqual(2);
 	});
@@ -185,7 +193,9 @@ describe("tasks-panel", () => {
 		const { _result, _kb, _done } = ctx._getFactory();
 
 		// 模拟按 Esc
-		_kb.matches.mockImplementation((_kd: unknown, binding: string) => binding === "tui.select.cancel");
+		_kb.matches.mockImplementation(
+			(_kd: unknown, binding: string) => binding === "tui.select.cancel",
+		);
 		_result.handleInput("escape");
 		expect(_done).toHaveBeenCalledWith(undefined);
 	});
@@ -196,7 +206,8 @@ describe("tasks-panel", () => {
 		const timers = [
 			createMockTimer({
 				id: "t1",
-				prompt: "this is a very long prompt that exceeds thirty five characters easily",
+				prompt:
+					"this is a very long prompt that exceeds thirty five characters easily",
 			}),
 		];
 		await openTasksPanel(ctx, timers, engine);

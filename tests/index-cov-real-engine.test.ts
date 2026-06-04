@@ -7,14 +7,14 @@
  * - updateUI 早期返回 / 清除 widget / 多类型 widget 渲染
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type {
 	ExtensionAPI,
 	ExtensionContext,
 	Theme,
 } from "@earendil-works/pi-coding-agent";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const theme = { bold: vi.fn((s: string) => s) } as unknown as Theme;
+const _theme = { bold: vi.fn((s: string) => s) } as unknown as Theme;
 
 const { mockParseLoopArgs } = vi.hoisted(() => ({
 	mockParseLoopArgs: vi.fn(),
@@ -44,7 +44,9 @@ function createMockPi() {
 	return { api, commands, tools, events };
 }
 
-function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext {
+function createMockCtx(
+	overrides?: Partial<ExtensionContext>,
+): ExtensionContext {
 	return {
 		cwd: "/tmp/test",
 		ui: {
@@ -53,7 +55,10 @@ function createMockCtx(overrides?: Partial<ExtensionContext>): ExtensionContext 
 			setWidget: vi.fn(),
 			custom: vi.fn(async () => {}),
 		},
-		sessionManager: { getEntries: vi.fn(() => []), getSessionId: vi.fn(() => "test-session-id") },
+		sessionManager: {
+			getEntries: vi.fn(() => []),
+			getSessionId: vi.fn(() => "test-session-id"),
+		},
 		...overrides,
 	} as unknown as ExtensionContext;
 }
@@ -133,10 +138,7 @@ describe("index.ts coverage: real engine paths", () => {
 		await mockPi.commands.get("loop")!.handler("5m recurring task", ctx);
 		vi.mocked(ctx.ui.setStatus).mockClear();
 
-		await mockPi.commands.get("remind")!.handler(
-			"1m one shot reminder",
-			ctx,
-		);
+		await mockPi.commands.get("remind")!.handler("1m one shot reminder", ctx);
 
 		// 2 active timers
 		expect(vi.mocked(ctx.ui.setStatus).mock.calls[0][1]).toContain("2");
@@ -158,7 +160,9 @@ describe("index.ts coverage: real engine paths", () => {
 		vi.advanceTimersByTime(60_000 + 30_000);
 
 		expect(vi.mocked(mockPi.api.sendMessage)).toHaveBeenCalledWith(
-			expect.objectContaining({ content: expect.stringContaining("recurring check") }),
+			expect.objectContaining({
+				content: expect.stringContaining("recurring check"),
+			}),
 			expect.objectContaining({ triggerTurn: true }),
 		);
 	});

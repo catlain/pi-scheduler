@@ -1,10 +1,10 @@
 /**
-* 定时器引擎 — 创建/取消/触发/恢复定时器
-*/
+ * 定时器引擎 — 创建/取消/触发/恢复定时器
+ */
 
 import type { SessionEntry } from "@earendil-works/pi-coding-agent";
-import type { Timer } from "./types";
 import { persistTimersToFile } from "./timer-persist";
+import type { Timer } from "./types";
 
 const JITTER_MAX_MS = 30_000;
 
@@ -17,7 +17,13 @@ export interface TimerEngine {
 }
 
 export function createTimerEngine(
-	_pi: { sendMessage: (msg: { customType: string; display: boolean; content: string }, opts?: { triggerTurn?: boolean }) => void; appendEntry: (type: string, data: unknown) => void },
+	_pi: {
+		sendMessage: (
+			msg: { customType: string; display: boolean; content: string },
+			opts?: { triggerTurn?: boolean },
+		) => void;
+		appendEntry: (type: string, data: unknown) => void;
+	},
 	onUpdate: () => void,
 	sessionId?: string,
 ): TimerEngine {
@@ -39,11 +45,15 @@ export function createTimerEngine(
 
 	function fire(id: string): void {
 		const timer = timers.get(id);
-		if (!timer || timer.status !== "active") return;
+		if (timer?.status !== "active") return;
 
 		try {
 			_pi.sendMessage(
-				{ customType: "scheduler", display: false, content: `[定时任务 ${id}] ${timer.prompt}` },
+				{
+					customType: "scheduler",
+					display: false,
+					content: `[定时任务 ${id}] ${timer.prompt}`,
+				},
 				{ triggerTurn: true },
 			);
 		} catch {
@@ -54,7 +64,8 @@ export function createTimerEngine(
 
 		if (timer.recurring) {
 			// 重算下次到期 + jitter
-			const jitter = Math.random() * Math.min(timer.intervalMs * 0.1, JITTER_MAX_MS);
+			const jitter =
+				Math.random() * Math.min(timer.intervalMs * 0.1, JITTER_MAX_MS);
 			timer.expiresAt = Date.now() + timer.intervalMs + Math.round(jitter);
 			timer.status = "active";
 			schedule(timer);
@@ -108,7 +119,11 @@ export function createTimerEngine(
 
 		restore(entries): void {
 			for (const entry of entries) {
-				if (entry.type === "custom" && entry.customType === "scheduler" && entry.data?.timers) {
+				if (
+					entry.type === "custom" &&
+					entry.customType === "scheduler" &&
+					entry.data?.timers
+				) {
 					const now = Date.now();
 					for (const t of entry.data.timers as Timer[]) {
 						if (t.status !== "active") continue;

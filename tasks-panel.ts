@@ -13,12 +13,13 @@ import {
 	type Theme,
 } from "@earendil-works/pi-coding-agent";
 import { Container, Spacer, Text } from "@earendil-works/pi-tui";
-import type { Timer } from "./types";
 import type { TimerEngine } from "./timer-engine";
+import type { Timer } from "./types";
 
 const bdr = (c: Container, t: Theme) =>
 	c.addChild(new DynamicBorder((s: string) => t.fg("accent", s)));
-const ln = (c: Container, t: Theme, s: string) => c.addChild(new Text(s, 1, 0));
+const ln = (c: Container, _t: Theme, s: string) =>
+	c.addChild(new Text(s, 1, 0));
 const sp = (c: Container) => c.addChild(new Spacer(1));
 
 function formatInterval(ms: number): string {
@@ -51,26 +52,18 @@ export async function openTasksPanel(
 				sp(container);
 
 				if (active.length === 0) {
-					ln(
-						container,
-						theme,
-						theme.fg("dim", "  没有活跃的定时任务"),
-					);
+					ln(container, theme, theme.fg("dim", "  没有活跃的定时任务"));
 				} else {
 					for (let i = 0; i < active.length; i++) {
 						const t = active[i];
 						const isCancelled = cancelled.has(t.id);
 						const isSelected = i === selected;
-						const ptr = isSelected
-							? theme.fg("accent", "→ ")
-							: "  ";
+						const ptr = isSelected ? theme.fg("accent", "→ ") : "  ";
 						const tag = t.recurring
 							? theme.fg("accent", "↻")
 							: theme.fg("text", "⏰");
 						const prompt =
-							t.prompt.length > 35
-								? t.prompt.slice(0, 32) + "..."
-								: t.prompt;
+							t.prompt.length > 35 ? `${t.prompt.slice(0, 32)}...` : t.prompt;
 						const interval = formatInterval(t.intervalMs);
 						const remaining = formatRemaining(t.expiresAt);
 						const status = isCancelled
@@ -94,11 +87,7 @@ export async function openTasksPanel(
 							theme.fg("dim", "y 确认 · n 取消"),
 					);
 				} else {
-					ln(
-						container,
-						theme,
-						theme.fg("dim", " ↑↓ 选择 · d 取消 · Esc 退出"),
-					);
+					ln(container, theme, theme.fg("dim", " ↑↓ 选择 · d 取消 · Esc 退出"));
 				}
 				bdr(container, theme);
 				tui.requestRender();
@@ -125,7 +114,11 @@ export async function openTasksPanel(
 							tui.requestRender();
 							return;
 						}
-						if (kd === "n" || kd === "N" || kb.matches(kd, "tui.select.cancel")) {
+						if (
+							kd === "n" ||
+							kd === "N" ||
+							kb.matches(kd, "tui.select.cancel")
+						) {
 							confirming = false;
 							tui.requestRender();
 							return;
