@@ -1,6 +1,6 @@
 {
 	"name": "pi-ate-scheduler",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Timer and recurring task extension for pi-coding-agent",
 	"main": "index.ts",
 	"peerDependencies": {
