@@ -3,6 +3,9 @@
 	"version": "1.0.2",
 	"description": "Timer and recurring task extension for pi-coding-agent",
 	"main": "index.ts",
+	"scripts": {
+		"test": "vitest run"
+	},
 	"peerDependencies": {
 		"@earendil-works/pi-coding-agent": ">=1.0.0"
 	},
@@ -10,6 +13,9 @@
 		"@earendil-works/pi-coding-agent": {
 			"optional": true
 		}
+	},
+	"optionalDependencies": {
+		"@earendil-works/pi-coding-agent": "^0.76.0"
 	},
 	"pi": {
 		"extensions": [
