@@ -128,6 +128,9 @@ export function createTimerEngine(
 					for (const t of entry.data.timers as Timer[]) {
 						if (t.status !== "active") continue;
 						if (t.expiresAt <= now) continue;
+						// 清理旧的 setTimeout 防止重复调度
+						const oldHandle = handles.get(t.id);
+						if (oldHandle !== undefined) clearTimeout(oldHandle);
 						timers.set(t.id, t);
 						schedule(t);
 					}

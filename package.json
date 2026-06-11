@@ -15,7 +15,7 @@
 		}
 	},
 	"optionalDependencies": {
-		"@earendil-works/pi-coding-agent": "^0.76.0"
+		"@earendil-works/pi-coding-agent": ">=1.0.0"
 	},
 	"pi": {
 		"extensions": [
